@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">MyAndroidPlayer</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+	<string name="video_content">http://video-js.zencoder.com/oceans-clip.mp4</string>
+	<string name="video_url">Video URL</string>
+</resources>
