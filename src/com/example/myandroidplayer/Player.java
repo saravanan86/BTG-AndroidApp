@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.HashMap;
 
+import android.app.Activity;
 import android.content.Context;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
@@ -14,6 +16,7 @@ import android.media.MediaPlayer.OnInfoListener;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.SurfaceView;
 import android.view.View;
 import android.webkit.URLUtil;
 import android.widget.MediaController;
@@ -28,10 +31,18 @@ public class Player extends VideoView {
 	private MediaController mc;
 	private Mediator mediator;
 	private TextView _logField;
+	private Activity _activity;
+	private SurfaceView _fwView;
+	private Context _fwCtxt;
+	private VideoView vv = null;
+	private boolean videoLoaded = false;
+	private HashMap<String, String> paths = new HashMap<String, String>();
+	private boolean bentoInitiated = false;
 	
 	public Player(Context context, AttributeSet attrs){
 		super(context, attrs);
-		setListeners();
+		vv = this;
+		
 	}
 	
     @Override
@@ -69,18 +80,42 @@ public class Player extends VideoView {
     	mediator.onSeek();
     }
     
+    public void appLoaded(){
+    	mediator.onPageCall();
+    }
     
-    public void playVideo(String path){
+    public void loadVideo(String path){
+    	Log.d(TAG,"path: "+path);
+		videoLoaded = false;
+		if(!bentoInitiated){
+			mediator.onConfig();
+			mediator.onActivyReady(_activity);					
+			mediator.onFWViewAvailable(_fwView);
+			mediator.onFWContextAvailable(_fwCtxt);
+			mediator.onPlayerAvailable(vv);
+			Log.d(TAG,"onPrepared: before onload=");
+			mediator.onLoad();
+			bentoInitiated = true;
+		}
+		mediator.onIsItTimeForAnAd(0, false);
 		
-		Log.d(TAG,"path: "+path);
+		setListeners();
 		try{
 			if(path == null){
-				path = "http://video-js.zencoder.com/oceans-clip.mp4";
+				path = "http://daily3gp.com/vids/747.3gp";//"http://video-js.zencoder.com/oceans-clip.mp4";
+				appLoaded();
+			}else{
+				mediator.onEventCall(path, "external", "video file");
 			}
 			this.setVideoPath(getDataSource(path)); // http://video-js.zencoder.com/oceans-clip.mp4 "http://daily3gp.com/vids/747.3gp"
 		}catch(Exception e){
 			Log.e(TAG, "error: " + e.getMessage(), e);
 		}
+		Log.d(TAG,"Video loaded");
+    }
+    
+    public void playVideo(){
+		
 		Log.d(TAG,"about to start");
 		setMediaControl();
 		this.start();
@@ -89,9 +124,24 @@ public class Player extends VideoView {
 		Log.d(TAG,"focused");
 	}
     
+    public void setActivity(Activity act){
+    	_activity = act;
+    }
+    
     public void setLogArea(TextView logField){
     	_logField = logField;
-    	mediator = new Mediator(_logField);	
+    	_activity = (Activity)logField.getContext();
+    	_logField.setText("SAMPLE TEST");
+    	mediator = new Mediator(_logField, _activity);	
+    }
+    public void setFWView(SurfaceView view){
+    	_fwView = view;
+    	
+    	
+    }
+    public void setFWContext(Context ctxt){
+    	_fwCtxt = ctxt;
+    	
     }
     
     private void setMediaControl(){
@@ -112,14 +162,26 @@ public class Player extends VideoView {
 			@Override
 			public void onPrepared(MediaPlayer mp) {
 				// TODO Auto-generated method stub
-				mediator.onLoad();
+				Log.d(TAG,"onPrepared: videoLoaded=" + videoLoaded);
+				if(!videoLoaded){
+					videoLoaded = true;
+					/*mediator.onConfig();
+					mediator.onActivyReady(_activity);					
+					mediator.onFWViewAvailable(_fwView);
+					mediator.onFWContextAvailable(_fwCtxt);
+					mediator.onPlayerAvailable(vv);
+					Log.d(TAG,"onPrepared: before onload=");
+					mediator.onLoad();
+					mediator.onIsItTimeForAnAd(0, false);
+					appLoaded();*/
+				}
 			}
 		});
     	
     	this.setOnInfoListener(new OnInfoListener() {
 			@Override
 			public boolean onInfo(MediaPlayer mp, int what, int extra) {
-				mediator.onPlayHeadUpdate();
+				mediator.onPlayHeadUpdate((double)mp.getCurrentPosition());
 				return false;
 			}
 		});
@@ -133,6 +195,10 @@ public class Player extends VideoView {
     }
 	
 	private String getDataSource(String path) throws IOException {
+		/*if(paths.containsKey(path)){
+			Log.d("PLAYER", "Path is "+path+". TempPath is "+paths.get(path));
+			return paths.get(path);
+		}*/
         if (!URLUtil.isNetworkUrl(path)) {
             return path;
         } else {
@@ -159,6 +225,8 @@ public class Player extends VideoView {
                 Log.e(TAG, "error: " + ex.getMessage(), ex);
             }
             out.close();
+            paths.put(path, tempPath);
+            Log.d("PLAYER", "Path is "+path+". TempPath is "+tempPath);
             return tempPath;
         }
     }

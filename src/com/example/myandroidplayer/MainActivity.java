@@ -17,6 +17,7 @@ import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.webkit.URLUtil;
@@ -31,6 +32,7 @@ public class MainActivity extends Activity {
 	private static final String TAG = "MAIN";
 	private Player vv;
 	private Button btn;
+	private TextView txtView;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -40,18 +42,25 @@ public class MainActivity extends Activity {
             public void run() {
             	StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         		StrictMode.setThreadPolicy(policy);
-        		TextView txtView = (TextView)findViewById(R.id.text);
+        		txtView = (TextView)findViewById(R.id.text);
         		btn = ((Button)findViewById(R.id.btn));
         		btn.setOnClickListener(new OnClickListener() {
 					@Override
 					public void onClick(View v) {
-						vv.playVideo(((EditText)findViewById(R.id.txtInput)).getText().toString());
+						vv = (Player)findViewById(R.id.vv);
+						vv.setLogArea(txtView);
+		        		vv.setFWView((SurfaceView)findViewById(R.id.fw));
+		        		vv.setFWContext(getApplicationContext());
+						vv.loadVideo(((EditText)findViewById(R.id.txtInput)).getText().toString());
 					}
 				});
         		vv = (Player)findViewById(R.id.vv);
         		txtView.setMovementMethod(new ScrollingMovementMethod());
         		vv.setLogArea(txtView);
-                vv.playVideo(null);
+        		vv.setFWView((SurfaceView)findViewById(R.id.fw));
+        		vv.setFWContext(getApplicationContext());
+                vv.loadVideo(null);
+                //vv.appLoaded();
             }
              
         });
